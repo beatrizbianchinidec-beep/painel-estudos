@@ -28,7 +28,7 @@
     .btn-google { background: #FFF; border: 1px solid var(--border); padding: 12px 24px; border-radius: var(--radius-pill); font-size: 14px; font-weight: 600; color: var(--text-title); cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; transition: all 0.2s; }
     .btn-google:hover { background: var(--bg); border-color: var(--pastel-pink-accent); }
     
-    #app-container { display: none; width: 100%; display: flex; } /* Oculto até ao login */
+    #app-container { display: none; width: 100%; display: flex; } 
 
     /* PAINEL LATERAL ESQUERDO */
     .sidebar { width: 260px; background-color: var(--sidebar-bg); border-right: 1px solid var(--border); padding: 32px 18px; display: flex; flex-direction: column; gap: 28px; flex-shrink: 0; position: sticky; top: 0; height: 100vh; overflow-y: auto; }
@@ -105,12 +105,18 @@
     .flashcard-back { background: var(--pastel-pink-light); transform: rotateY(180deg); border-color: var(--pastel-pink); }
     .fc-tag { font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--pastel-pink-accent); }
 
+    .review-list { display: flex; flex-direction: column; gap: 10px; }
+    .review-item { display: flex; justify-content: space-between; align-items: center; padding: 14px 18px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; transition: all 0.2s; }
+    .review-item.completed { background: #FDFDFD; opacity: 0.6; }
+    .review-title { font-size: 14.5px; font-weight: 600; color: var(--text-title); }
+    .btn-check-review { background: #FFFFFF; border: 1px solid var(--border); padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; }
+    .btn-check-review.done { background: var(--pastel-pink-light); color: var(--pastel-pink-accent); }
+
     .empty-state { padding: 40px 20px; text-align: center; color: var(--text-muted); font-size: 14px; font-style: italic; background: #FAFBFB; border: 1px dashed var(--border); border-radius: var(--radius-md); }
   </style>
 </head>
 <body>
 
-  <!-- TELA DE LOGIN (FIREBASE AUTH) -->
   <div id="login-screen">
     <div class="login-box">
       <h2 class="login-title">Painel de Estudos</h2>
@@ -122,7 +128,6 @@
     </div>
   </div>
 
-  <!-- APLICAÇÃO PRINCIPAL -->
   <div id="app-container" style="display: none;">
     <aside class="sidebar">
       <div class="brand-section">
@@ -132,6 +137,7 @@
       <nav class="nav-menu">
         <div class="nav-label">Navegação</div>
         <button class="tab-btn active" onclick="switchTab(event, 'tab-cronograma')">📅 Cronograma</button>
+        <button class="tab-btn" onclick="switchTab(event, 'tab-revisoes')">🔁 Revisões</button>
         <button class="tab-btn" onclick="switchTab(event, 'tab-aulas')">📚 Materiais</button>
         <button class="tab-btn" onclick="switchTab(event, 'tab-simulados')">📝 Questões</button>
         <button class="tab-btn" onclick="switchTab(event, 'tab-pontos')">💡 Pontos de Atenção</button>
@@ -152,25 +158,43 @@
         <div id="cronograma-container"><div class="empty-state">⏳ A carregar o seu cronograma da base de dados...</div></div>
       </section>
 
-      <!-- MATERIAIS (COM UPLOAD PARA FIREBASE STORAGE) -->
+      <!-- REVISÕES -->
+      <section id="tab-revisoes" class="tab-content">
+        <div class="card">
+          <h2 class="card-title">Revisões na Nuvem</h2>
+          <p class="card-description">Mapeamento sincronizado. Agende e controle as suas revisões diretamente pelo Firebase.</p>
+          <div class="upload-row">
+            <input type="text" id="rev-subject" placeholder="Assunto (Ex: Processo Civil)">
+            <input type="date" id="rev-date">
+            <select id="rev-importance">
+              <option value="7">⭐⭐⭐ Alta (7 dias)</option>
+              <option value="15">⭐⭐ Média (15 dias)</option>
+              <option value="30">⭐ Baixa (30 dias)</option>
+            </select>
+            <button class="btn-action" onclick="agendarRevisao()">+ Agendar Revisão</button>
+          </div>
+          <div class="review-list" id="reviews-container"><div class="empty-state">⏳ A carregar revisões...</div></div>
+        </div>
+      </section>
+
+      <!-- MATERIAIS -->
       <section id="tab-aulas" class="tab-content">
         <div class="card">
           <h2 class="card-title">Materiais na Nuvem</h2>
-          <p class="card-description">Anexe PDFs de aula, mapas mentais e esquemas. Serão guardados de forma segura na nuvem do Google.</p>
           <div class="subject-boxes-container">
             <div class="subject-box">
               <div class="subject-box-header"><span class="subject-box-title">⚖️ Processo Civil</span></div>
-              <div class="upload-row"><input type="text" id="desc-proc_civil" placeholder="Descrição (Ex: PDF Aula 01)"><input type="file" id="file-proc_civil"><button class="btn-action" onclick="enviarMaterialFirebase('proc_civil')">☁️ Enviar para Nuvem</button></div>
+              <div class="upload-row"><input type="text" id="desc-proc_civil" placeholder="Descrição"><input type="file" id="file-proc_civil"><button class="btn-action" onclick="enviarMaterialFirebase('proc_civil')">☁️ Enviar para Nuvem</button></div>
               <div id="list-proc_civil"></div>
             </div>
             <div class="subject-box">
               <div class="subject-box-header"><span class="subject-box-title">📜 Direito Civil</span></div>
-              <div class="upload-row"><input type="text" id="desc-dir_civil" placeholder="Descrição (Ex: PDF Aula 01)"><input type="file" id="file-dir_civil"><button class="btn-action" onclick="enviarMaterialFirebase('dir_civil')">☁️ Enviar para Nuvem</button></div>
+              <div class="upload-row"><input type="text" id="desc-dir_civil" placeholder="Descrição"><input type="file" id="file-dir_civil"><button class="btn-action" onclick="enviarMaterialFirebase('dir_civil')">☁️ Enviar para Nuvem</button></div>
               <div id="list-dir_civil"></div>
             </div>
             <div class="subject-box">
               <div class="subject-box-header"><span class="subject-box-title">🏛️ Direito Constitucional</span></div>
-              <div class="upload-row"><input type="text" id="desc-dir_const" placeholder="Descrição (Ex: PDF Aula 01)"><input type="file" id="file-dir_const"><button class="btn-action" onclick="enviarMaterialFirebase('dir_const')">☁️ Enviar para Nuvem</button></div>
+              <div class="upload-row"><input type="text" id="desc-dir_const" placeholder="Descrição"><input type="file" id="file-dir_const"><button class="btn-action" onclick="enviarMaterialFirebase('dir_const')">☁️ Enviar para Nuvem</button></div>
               <div id="list-dir_const"></div>
             </div>
           </div>
@@ -201,9 +225,9 @@
             <button class="subnav-btn" onclick="switchSubTab(event, 'sub-pon-civ', 'card-pontos')">📜 Direito Civil</button>
             <button class="subnav-btn" onclick="switchSubTab(event, 'sub-pon-const', 'card-pontos')">🏛️ Direito Constitucional</button>
           </div>
-          <div id="sub-pon-proc" class="subtab-content active"><div class="empty-state">Os Post-its das questões que errar aparecerão aqui.</div></div>
-          <div id="sub-pon-civ" class="subtab-content"><div class="empty-state">Os Post-its das questões que errar aparecerão aqui.</div></div>
-          <div id="sub-pon-const" class="subtab-content"><div class="empty-state">Os Post-its das questões que errar aparecerão aqui.</div></div>
+          <div id="sub-pon-proc" class="subtab-content active"><div class="empty-state">Os Post-its aparecerão aqui.</div></div>
+          <div id="sub-pon-civ" class="subtab-content"><div class="empty-state">Os Post-its aparecerão aqui.</div></div>
+          <div id="sub-pon-const" class="subtab-content"><div class="empty-state">Os Post-its aparecerão aqui.</div></div>
         </div>
       </section>
 
@@ -224,14 +248,12 @@
     </main>
   </div>
 
-  <!-- SCRIPT MODULAR DO FIREBASE -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-    import { getFirestore, doc, setDoc, getDoc, collection, getDocs, addDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { getFirestore, doc, setDoc, collection, getDocs, addDoc, deleteDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
     import { getStorage, ref, uploadBytesResumable, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js";
 
-    // 1. AS SUAS CHAVES DO FIREBASE
     const firebaseConfig = {
       apiKey: "AIzaSyA8jYl6GvuMM8SxSZwuW1x3Bef9v8GbRtU",
       authDomain: "base-de-estudos-bia.firebaseapp.com",
@@ -247,23 +269,19 @@
     const db = getFirestore(app);
     const storage = getStorage(app);
     
-    // O SEU LINK DA PLANILHA NO GOOGLE APPS SCRIPT
     const URL_WEB_APP = "https://script.google.com/macros/s/AKfycby20LzrEbOiFPJ5VaaH6z_LLPrutSABNCmVmxO10Fem5sUmsU0Kf0kiLY5r2VZwvKSO/exec";
     const MEU_TOKEN = "beatriz_estudos_2026";
     
     let usuarioAtual = null;
-    let memoriaQuestoes = {}; // Guardará as respostas lidas do Firestore
+    let memoriaQuestoes = {};
 
-    // ==========================================
-    // SISTEMA DE AUTENTICAÇÃO
-    // ==========================================
     onAuthStateChanged(auth, (user) => {
       if (user) {
         usuarioAtual = user;
         document.getElementById('userNameDisplay').textContent = `Olá, ${user.displayName.split(' ')[0]}.`;
         document.getElementById('login-screen').style.display = 'none';
         document.getElementById('app-container').style.display = 'flex';
-        arrancarSistemaBaseDeDados(); // Inicia o download de dados
+        arrancarSistemaBaseDeDados(); 
       } else {
         usuarioAtual = null;
         document.getElementById('login-screen').style.display = 'flex';
@@ -271,16 +289,9 @@
       }
     });
 
-    window.iniciarLogin = () => {
-      const provider = new GoogleAuthProvider();
-      signInWithPopup(auth, provider).catch(error => alert("Erro ao entrar: " + error.message));
-    };
-
+    window.iniciarLogin = () => { signInWithPopup(auth, new GoogleAuthProvider()).catch(e => console.log(e)); };
     window.encerrarSessao = () => signOut(auth);
 
-    // ==========================================
-    // BUSCA DE DADOS (PLANILHA + FIREBASE)
-    // ==========================================
     async function buscarPlanilha(nomeAba) {
       try {
         const res = await fetch(`${URL_WEB_APP}?token=${MEU_TOKEN}&aba=${nomeAba}`);
@@ -290,12 +301,22 @@
     }
 
     async function arrancarSistemaBaseDeDados() {
-      // 1. Baixar o progresso salvo na nuvem do Firebase (Firestore)
-      const progressoRef = collection(db, `users/${usuarioAtual.uid}/questoes`);
-      const snapshot = await getDocs(progressoRef);
-      snapshot.forEach(doc => { memoriaQuestoes[doc.id] = doc.data().status; });
+      try {
+        // Puxar Progresso do Firebase
+        const progressoRef = collection(db, `users/${usuarioAtual.uid}/questoes`);
+        const snapshot = await getDocs(progressoRef);
+        snapshot.forEach(doc => { memoriaQuestoes[doc.id] = doc.data().status; });
+        
+        // Renderizar partes da Nuvem
+        renderizarRevisoes();
+        renderizarListaMateriais('proc_civil');
+        renderizarListaMateriais('dir_civil');
+        renderizarListaMateriais('dir_const');
+      } catch(e) {
+        console.error("Erro no Firestore (Verifique a ativação da API):", e);
+      }
 
-      // 2. Baixar os conteúdos das Planilhas do Google
+      // Puxar Planilha
       const [cronograma, questoes, flashcards] = await Promise.all([
         buscarPlanilha('Cronograma'), buscarPlanilha('Questoes'), buscarPlanilha('Flashcards')
       ]);
@@ -303,78 +324,55 @@
       renderizarCronograma(cronograma);
       renderizarQuestoes(questoes);
       renderizarFlashcards(flashcards);
-      
-      // 3. Renderizar Materiais da Nuvem
-      renderizarListaMateriais('proc_civil');
-      renderizarListaMateriais('dir_civil');
-      renderizarListaMateriais('dir_const');
     }
 
-    // ==========================================
-    // RENDERIZADORES DA PLANILHA
-    // ==========================================
+    // ================== RENDERIZADORES ==================
     function renderizarCronograma(data) {
       if (!data || data.length === 0) return;
-      const semanas = {};
+      let semanas = {};
       data.forEach(linha => {
         if (!linha[0]) return;
-        const [semana, dia, assunto, t1R, t1D, t2R, t2D, t3R, t3D] = linha;
-        if (!semanas[semana]) semanas[semana] = [];
-        semanas[semana].push(linha);
+        if (!semanas[linha[0]]) semanas[linha[0]] = [];
+        semanas[linha[0]].push(linha);
       });
       let html = "";
       for (const [semNome, dias] of Object.entries(semanas)) {
         html += `<div class="accordion-week"><div class="accordion-header" onclick="toggleAccordion(this)"><span>${semNome}</span><span style="font-size: 13px;">Expandir</span></div><div class="accordion-body" style="display: none;">`;
         dias.forEach(d => {
-          const [_, dia, assunto, t1R, t1D, t2R, t2D, t3R, t3D] = d;
           let tarefasHTML = "";
-          if (t1R) tarefasHTML += `<div class="day-task-row"><span class="heart-marker">♡</span><div><span class="task-label">${t1R}</span> <span>${t1D}</span></div></div>`;
-          if (t2R) tarefasHTML += `<div class="day-task-row"><span class="heart-marker">♡</span><div><span class="task-label">${t2R}</span> <span>${t2D}</span></div></div>`;
-          if (t3R) tarefasHTML += `<div class="day-task-row"><span class="heart-marker">♡</span><div><span class="task-label">${t3R}</span> <span>${t3D}</span></div></div>`;
-          html += `<div class="day-block"><div class="day-badge">${dia}</div><div class="day-content"><div class="day-subject-title">${assunto}</div>${tarefasHTML}</div></div>`;
+          if (d[3]) tarefasHTML += `<div class="day-task-row"><span class="heart-marker">♡</span><div><span class="task-label">${d[3]}</span> <span>${d[4]}</span></div></div>`;
+          if (d[5]) tarefasHTML += `<div class="day-task-row"><span class="heart-marker">♡</span><div><span class="task-label">${d[5]}</span> <span>${d[6]}</span></div></div>`;
+          html += `<div class="day-block"><div class="day-badge">${d[1]}</div><div class="day-content"><div class="day-subject-title">${d[2]}</div>${tarefasHTML}</div></div>`;
         });
         html += `</div></div>`;
       }
-      document.getElementById('cronograma-container').innerHTML = html;
+      const c = document.getElementById('cronograma-container'); if(c) c.innerHTML = html;
     }
 
     function renderizarQuestoes(data) {
-      let disciplinas = { proc_civil: { html: "", tot: 0, certas: 0, erradas: 0, postits: "" }, dir_civil: { html: "", tot: 0, certas: 0, erradas: 0, postits: "" }, dir_const: { html: "", tot: 0, certas: 0, erradas: 0, postits: "" } };
+      let discMap = { proc_civil: { html: "", tot: 0, ok: 0, err: 0, postits: "" }, dir_civil: { html: "", tot: 0, ok: 0, err: 0, postits: "" }, dir_const: { html: "", tot: 0, ok: 0, err: 0, postits: "" } };
       
       data.forEach(linha => {
-        if(linha.length < 6 || !linha[0]) return;
+        if(linha.length < 6 || !linha[0] || !discMap[linha[1]]) return;
         const [id, disc, titulo, enunciado, resposta, licao] = linha;
-        if(!disciplinas[disc]) return;
+        const statusSalvo = memoriaQuestoes[id] || "unanswered"; 
         
-        const statusSalvo = memoriaQuestoes[id] || "unanswered"; // Lê a memória da nuvem
+        discMap[disc].tot++;
+        if (statusSalvo === 'correct') discMap[disc].ok++;
+        if (statusSalvo === 'wrong') { discMap[disc].err++; discMap[disc].postits += `<div class="post-it" id="postit-${id}"><strong>Lição (${titulo}):</strong> ${licao}</div>`; }
         
-        disciplinas[disc].tot++;
-        if (statusSalvo === 'correct') disciplinas[disc].certas++;
-        if (statusSalvo === 'wrong') {
-          disciplinas[disc].erradas++;
-          disciplinas[disc].postits += `<div class="post-it" id="postit-${id}"><strong>Lição (${titulo}):</strong> ${licao}</div>`;
-        }
-        
-        disciplinas[disc].html += `
+        discMap[disc].html += `
           <div class="question-box" id="${id}" data-status="${statusSalvo}" data-lesson="${licao}" data-disc="${disc}" data-titulo="${titulo}">
             <h4>${titulo}</h4><p>${enunciado}</p>
-            <div class="q-actions">
-              <button class="q-btn" onclick="toggleAnswer(this)">👁️ Ver Resposta</button>
-              <button class="q-btn correct ${statusSalvo==='correct'?'active':''}" onclick="registrarQuestaoFirestore(this, 'correct', '${id}', '${disc}')">✔️ Acertei</button>
-              <button class="q-btn wrong ${statusSalvo==='wrong'?'active':''}" onclick="registrarQuestaoFirestore(this, 'wrong', '${id}', '${disc}')">❌ Errei</button>
-            </div>
+            <div class="q-actions"><button class="q-btn" onclick="toggleAnswer(this)">👁️ Ver Resposta</button><button class="q-btn correct ${statusSalvo==='correct'?'active':''}" onclick="registrarQuestaoFirestore(this, 'correct', '${id}', '${disc}')">✔️ Acertei</button><button class="q-btn wrong ${statusSalvo==='wrong'?'active':''}" onclick="registrarQuestaoFirestore(this, 'wrong', '${id}', '${disc}')">❌ Errei</button></div>
             <div class="q-answer"><p><strong>RESPOSTA:</strong> ${resposta}</p></div>
           </div>`;
       });
       
-      Object.keys(disciplinas).forEach(d => {
-        document.getElementById(`questoes-${d}`).innerHTML = disciplinas[d].html || "<div class='empty-state'>Nenhuma questão mapeada.</div>";
-        document.getElementById(`stats-${d}`).innerHTML = `
-          <div class="stat-card"><span class="stat-value" id="tot-${d}">${disciplinas[d].tot}</span><span class="stat-label">Total Cadastradas</span></div>
-          <div class="stat-card"><span class="stat-value" id="ok-${d}">${disciplinas[d].certas}</span><span class="stat-label">ACERTADAS</span></div>
-          <div class="stat-card"><span class="stat-value" id="err-${d}">${disciplinas[d].erradas}</span><span class="stat-label">ERRADAS</span></div>
-        `;
-        document.getElementById(`sub-pon-${d}`).innerHTML = disciplinas[d].postits || "<div class='empty-state'>Nenhum erro registado. Ótimo trabalho!</div>";
+      Object.keys(discMap).forEach(d => {
+        const elQ = document.getElementById(`questoes-${d}`); if(elQ) elQ.innerHTML = discMap[d].html || "<div class='empty-state'>Nenhuma questão mapeada.</div>";
+        const elS = document.getElementById(`stats-${d}`); if(elS) elS.innerHTML = `<div class="stat-card"><span class="stat-value" id="tot-${d}">${discMap[d].tot}</span><span class="stat-label">Total</span></div><div class="stat-card"><span class="stat-value" id="ok-${d}">${discMap[d].ok}</span><span class="stat-label">ACERTADAS</span></div><div class="stat-card"><span class="stat-value" id="err-${d}">${discMap[d].err}</span><span class="stat-label">ERRADAS</span></div>`;
+        const elP = document.getElementById(`sub-pon-${d}`); if(elP) elP.innerHTML = discMap[d].postits || "<div class='empty-state'>Nenhum erro registado. Ótimo trabalho!</div>";
       });
     }
 
@@ -382,172 +380,128 @@
       let htmlProc = "", htmlCiv = "", htmlConst = "";
       data.forEach(linha => {
         if(linha.length < 5 || !linha[0]) return;
-        const [disciplina, tFrente, textFrente, tVerso, textVerso] = linha;
-        const cHTML = `<div class="flashcard-wrapper" onclick="flipCard(this)"><div class="flashcard-inner"><div class="flashcard-front"><span class="fc-tag">${tFrente}</span><div class="fc-text">${textFrente}</div><span class="fc-hint">Toque para virar</span></div><div class="flashcard-back"><span class="fc-tag">${tVerso}</span><div class="fc-text">${textVerso}</div></div></div></div>`;
-        if(disciplina === "proc_civil") htmlProc += cHTML;
-        if(disciplina === "dir_civil") htmlCiv += cHTML;
-        if(disciplina === "dir_const") htmlConst += cHTML;
+        const cHTML = `<div class="flashcard-wrapper" onclick="flipCard(this)"><div class="flashcard-inner"><div class="flashcard-front"><span class="fc-tag">${linha[1]}</span><div class="fc-text">${linha[2]}</div></div><div class="flashcard-back"><span class="fc-tag">${linha[3]}</span><div class="fc-text">${linha[4]}</div></div></div></div>`;
+        if(linha[0] === "proc_civil") htmlProc += cHTML;
+        if(linha[0] === "dir_civil") htmlCiv += cHTML;
+        if(linha[0] === "dir_const") htmlConst += cHTML;
       });
-      document.getElementById('flashcards-proc_civil').innerHTML = htmlProc;
-      document.getElementById('flashcards-dir_civil').innerHTML = htmlCiv;
-      document.getElementById('flashcards-dir_const').innerHTML = htmlConst;
+      const fp = document.getElementById('flashcards-proc_civil'); if(fp) fp.innerHTML = htmlProc;
+      const fc = document.getElementById('flashcards-dir_civil'); if(fc) fc.innerHTML = htmlCiv;
+      const fco = document.getElementById('flashcards-dir_const'); if(fco) fco.innerHTML = htmlConst;
     }
 
-    // ==========================================
-    // GRAVAR PROGRESSO NA NUVEM (FIRESTORE)
-    // ==========================================
+    // ================== REVISÕES FIRESTORE ==================
+    window.agendarRevisao = async () => {
+      const subject = document.getElementById('rev-subject').value.trim();
+      const dateStr = document.getElementById('rev-date').value;
+      const days = parseInt(document.getElementById('rev-importance').value);
+      if (!subject || !dateStr) return alert("Preencha o assunto e a data inicial.");
+      
+      const targetDate = new Date(new Date(dateStr + "T00:00:00").getTime() + days * 24 * 60 * 60 * 1000);
+      const stars = days === 7 ? '⭐⭐⭐' : (days === 15 ? '⭐⭐' : '⭐');
+      const targetDateStr = targetDate.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+
+      try {
+        await addDoc(collection(db, `users/${usuarioAtual.uid}/revisoes`), { subject, targetDateStr, stars, days, done: false, ts: targetDate.getTime() });
+        document.getElementById('rev-subject').value = '';
+        renderizarRevisoes();
+      } catch (e) { alert("Erro ao salvar revisão. Verifique se a API do Firestore está ativada."); }
+    };
+
+    async function renderizarRevisoes() {
+      const c = document.getElementById('reviews-container');
+      try {
+        const revRef = collection(db, `users/${usuarioAtual.uid}/revisoes`);
+        const snapshot = await getDocs(revRef);
+        let revs = [];
+        snapshot.forEach(doc => revs.push({ id: doc.id, ...doc.data() }));
+        if (revs.length === 0) { c.innerHTML = `<div class="empty-state">Sem revisões agendadas.</div>`; return; }
+        
+        revs.sort((a, b) => a.done === b.done ? a.ts - b.ts : (a.done ? 1 : -1));
+        c.innerHTML = revs.map(r => `
+          <div class="review-item ${r.done ? 'completed' : ''}">
+            <div><div class="review-title">${r.subject}</div><div style="font-size:12px;color:var(--text-muted)">${r.stars} (Revisar daqui a ${r.days} dias) • 🗓️ ${r.targetDateStr}</div></div>
+            <button class="btn-check-review ${r.done ? 'done' : ''}" onclick="toggleRevisao('${r.id}', ${r.done})">${r.done ? '✓ Feito' : 'Marcar Feito'}</button>
+          </div>
+        `).join('');
+      } catch(e) { c.innerHTML = "<div class='empty-state'>Erro ao carregar.</div>"; }
+    }
+    
+    window.toggleRevisao = async (id, currentStatus) => {
+      await updateDoc(doc(db, `users/${usuarioAtual.uid}/revisoes`, id), { done: !currentStatus });
+      renderizarRevisoes();
+    };
+
+    // ================== QUESTÕES FIRESTORE ==================
     window.registrarQuestaoFirestore = async (btn, novoStatus, qId, disc) => {
       const qBox = btn.closest('.question-box');
       const statusAntigo = qBox.getAttribute('data-status');
-      if (statusAntigo === novoStatus) return; // Se clicou no que já estava, ignora
+      if (statusAntigo === novoStatus) return; 
 
-      // Atualiza a Interface Visual Imediatamente
       qBox.setAttribute('data-status', novoStatus);
       qBox.querySelector('.q-btn.correct').classList.toggle('active', novoStatus === 'correct');
       qBox.querySelector('.q-btn.wrong').classList.toggle('active', novoStatus === 'wrong');
 
-      const elOk = document.getElementById(`ok-${disc}`);
-      const elErr = document.getElementById(`err-${disc}`);
-      if (statusAntigo === 'correct') elOk.textContent = parseInt(elOk.textContent) - 1;
-      if (statusAntigo === 'wrong') elErr.textContent = parseInt(elErr.textContent) - 1;
-      if (novoStatus === 'correct') elOk.textContent = parseInt(elOk.textContent) + 1;
-      if (novoStatus === 'wrong') elErr.textContent = parseInt(elErr.textContent) + 1;
+      const elOk = document.getElementById(`ok-${disc}`); const elErr = document.getElementById(`err-${disc}`);
+      if (elOk && statusAntigo === 'correct') elOk.textContent = parseInt(elOk.textContent) - 1;
+      if (elErr && statusAntigo === 'wrong') elErr.textContent = parseInt(elErr.textContent) - 1;
+      if (elOk && novoStatus === 'correct') elOk.textContent = parseInt(elOk.textContent) + 1;
+      if (elErr && novoStatus === 'wrong') elErr.textContent = parseInt(elErr.textContent) + 1;
 
-      // Gestão Inteligente dos Post-its
-      const pontosContainer = document.getElementById(`sub-pon-${disc}`);
-      const licao = qBox.getAttribute('data-lesson');
-      const titulo = qBox.getAttribute('data-titulo');
-
-      if (novoStatus === 'wrong') {
-        const emptyState = pontosContainer.querySelector('.empty-state');
-        if (emptyState) emptyState.remove();
-        if (!document.getElementById(`postit-${qId}`)) {
-          pontosContainer.insertAdjacentHTML('beforeend', `<div class="post-it" id="postit-${qId}"><strong>Lição (${titulo}):</strong> ${licao}</div>`);
-        }
-      } else if (novoStatus === 'correct') {
+      const pCont = document.getElementById(`sub-pon-${disc}`);
+      if (novoStatus === 'wrong' && pCont) {
+        if(pCont.querySelector('.empty-state')) pCont.innerHTML = '';
+        if(!document.getElementById(`postit-${qId}`)) pCont.insertAdjacentHTML('beforeend', `<div class="post-it" id="postit-${qId}"><strong>Lição (${qBox.getAttribute('data-titulo')}):</strong> ${qBox.getAttribute('data-lesson')}</div>`);
+      } else if (novoStatus === 'correct' && pCont) {
         const postIt = document.getElementById(`postit-${qId}`);
-        if (postIt) {
-          postIt.remove();
-          if (pontosContainer.innerHTML.trim() === '') pontosContainer.innerHTML = "<div class='empty-state'>Nenhum erro registado. Ótimo trabalho!</div>";
-        }
+        if(postIt) { postIt.remove(); if(pCont.innerHTML.trim()==='') pCont.innerHTML = "<div class='empty-state'>Nenhum erro registado. Ótimo trabalho!</div>"; }
       }
 
-      // ☁️ Grava Silenciosamente no Banco de Dados (Firebase)
-      try {
-        const docRef = doc(db, `users/${usuarioAtual.uid}/questoes`, qId);
-        await setDoc(docRef, { status: novoStatus, timestamp: new Date() });
-      } catch (error) {
-        console.error("Erro ao salvar na nuvem:", error);
-      }
+      try { await setDoc(doc(db, `users/${usuarioAtual.uid}/questoes`, qId), { status: novoStatus }); } catch(e) { console.log(e); }
     };
 
-    // ==========================================
-    // UPLOAD DE MATERIAIS PARA O STORAGE
-    // ==========================================
+    // ================== STORAGE (Upload) ==================
     window.enviarMaterialFirebase = async (disciplina) => {
-      const descInput = document.getElementById(`desc-${disciplina}`);
-      const fileInput = document.getElementById(`file-${disciplina}`);
-      const file = fileInput.files[0];
-      
-      if (!file) { alert("Por favor, selecione um ficheiro PDF."); return; }
-      
-      const btn = fileInput.nextElementSibling;
-      btn.textContent = "A Enviar..."; btn.disabled = true;
-
+      const desc = document.getElementById(`desc-${disciplina}`); const fileIn = document.getElementById(`file-${disciplina}`);
+      if (!fileIn.files[0]) return alert("Selecione um ficheiro PDF.");
+      const btn = fileIn.nextElementSibling; btn.textContent = "A Enviar..."; btn.disabled = true;
       try {
-        // 1. Upload para o Firebase Storage
-        const filePath = `users/${usuarioAtual.uid}/materiais/${Date.now()}_${file.name}`;
-        const storageRef = ref(storage, filePath);
-        await uploadBytesResumable(storageRef, file);
-        const url = await getDownloadURL(storageRef);
-
-        // 2. Salva o link do PDF no Firestore
-        await addDoc(collection(db, `users/${usuarioAtual.uid}/materiais`), {
-          disciplina: disciplina,
-          nomeFicheiro: file.name,
-          descricao: descInput.value.trim() || 'Sem descrição',
-          urlDownload: url,
-          caminhoStorage: filePath,
-          dataUpload: new Date()
-        });
-
-        descInput.value = ""; fileInput.value = "";
-        renderizarListaMateriais(disciplina);
-      } catch (error) {
-        alert("Erro ao fazer upload: " + error.message);
-      } finally {
-        btn.textContent = "☁️ Enviar para Nuvem"; btn.disabled = false;
-      }
+        const path = `users/${usuarioAtual.uid}/materiais/${Date.now()}_${fileIn.files[0].name}`;
+        const sRef = ref(storage, path);
+        await uploadBytesResumable(sRef, fileIn.files[0]);
+        const url = await getDownloadURL(sRef);
+        await addDoc(collection(db, `users/${usuarioAtual.uid}/materiais`), { disciplina, nome: fileIn.files[0].name, desc: desc.value||'Sem descrição', url, path });
+        desc.value = ""; fileIn.value = ""; renderizarListaMateriais(disciplina);
+      } catch (e) { alert("Erro: " + e.message); } finally { btn.textContent = "☁️ Enviar"; btn.disabled = false; }
     };
 
-    async function renderizarListaMateriais(disciplina) {
-      const container = document.getElementById(`list-${disciplina}`);
-      container.innerHTML = "<div class='empty-state' style='padding:15px;'>A atualizar materiais...</div>";
-      
+    async function renderizarListaMateriais(disc) {
+      const c = document.getElementById(`list-${disc}`); if(!c) return;
+      c.innerHTML = "<div class='empty-state' style='padding:15px;'>Atualizando...</div>";
       try {
-        const materiaisRef = collection(db, `users/${usuarioAtual.uid}/materiais`);
-        const snapshot = await getDocs(materiaisRef);
+        const snap = await getDocs(collection(db, `users/${usuarioAtual.uid}/materiais`));
         let html = "";
-        
-        snapshot.forEach(doc => {
-          const d = doc.data();
-          if (d.disciplina === disciplina) {
-            html += `
-              <div class="subject-file-item" id="mat-${doc.id}">
-                <div><span style="font-weight:600;color:var(--text-title);">${d.descricao}</span><br><span style="font-size:11px;color:var(--text-muted);">📄 ${d.nomeFicheiro}</span></div>
-                <div style="display:flex;gap:8px;">
-                  <a href="${d.urlDownload}" target="_blank" class="btn-file-open">Abrir Ficheiro</a>
-                  <button class="btn-action" style="background:#FDF2F4;color:#A03B46;padding:4px 8px;font-size:11.5px;" onclick="eliminarMaterial('${doc.id}', '${d.caminhoStorage}', '${disciplina}')">Eliminar</button>
-                </div>
-              </div>`;
-          }
+        snap.forEach(d => {
+          if (d.data().disciplina === disc) html += `<div class="subject-file-item"><div><strong>${d.data().desc}</strong><br><small>📄 ${d.data().nome}</small></div><div style="display:flex;gap:8px;"><a href="${d.data().url}" target="_blank" class="btn-file-open">Abrir</a><button class="btn-action" style="background:#FDF2F4;color:#A03B46" onclick="eliminarMaterial('${d.id}', '${d.data().path}', '${disc}')">Apagar</button></div></div>`;
         });
-        container.innerHTML = html || "<div class='empty-state' style='padding:15px;'>Nenhum material na nuvem.</div>";
-      } catch (error) {
-        container.innerHTML = "<div class='empty-state'>Erro ao carregar ficheiros.</div>";
-      }
+        c.innerHTML = html || "<div class='empty-state' style='padding:15px;'>Vazio.</div>";
+      } catch(e) { c.innerHTML = "<div class='empty-state'>Erro ao carregar.</div>"; }
     }
-
-    window.eliminarMaterial = async (docId, caminhoStorage, disciplina) => {
-      if (!confirm("Tem a certeza que deseja apagar este material da nuvem?")) return;
-      try {
-        await deleteObject(ref(storage, caminhoStorage)); // Apaga o ficheiro
-        await deleteDoc(doc(db, `users/${usuarioAtual.uid}/materiais`, docId)); // Apaga o registo
-        renderizarListaMateriais(disciplina);
-      } catch (error) { alert("Erro ao eliminar: " + error.message); }
+    
+    window.eliminarMaterial = async (id, path, disc) => {
+      if(!confirm("Apagar ficheiro da nuvem?")) return;
+      try { await deleteObject(ref(storage, path)); await deleteDoc(doc(db, `users/${usuarioAtual.uid}/materiais`, id)); renderizarListaMateriais(disc); } catch(e) { alert(e.message); }
     };
 
-    // FUNÇÕES DE INTERFACE BÁSICAS (Exportadas para a janela global)
-    window.switchTab = (evt, tabId) => {
-      document.querySelectorAll('.sidebar .tab-btn').forEach(btn => btn.classList.remove('active'));
-      document.querySelectorAll('.main-content > .tab-content').forEach(c => c.classList.remove('active'));
-      evt.currentTarget.classList.add('active');
-      document.getElementById(tabId).classList.add('active');
-    };
-    window.switchSubTab = (evt, subtabId, parentCardId) => {
-      const parent = document.getElementById(parentCardId);
-      parent.querySelectorAll('.subnav-btn').forEach(btn => btn.classList.remove('active'));
-      parent.querySelectorAll('.subtab-content').forEach(c => c.classList.remove('active'));
-      evt.currentTarget.classList.add('active');
-      document.getElementById(subtabId).classList.add('active');
-    };
-    window.toggleAccordion = (headerEl) => {
-      const body = headerEl.nextElementSibling;
-      const label = headerEl.querySelector('span:last-child');
-      if (body.style.display === "none") { body.style.display = "flex"; label.textContent = "Recolher"; } 
-      else { body.style.display = "none"; label.textContent = "Expandir"; }
-    };
-    window.toggleAnswer = (btn) => {
-      const div = btn.closest('.question-box').querySelector('.q-answer');
-      if (div.style.display === 'none' || div.style.display === '') { div.style.display = 'block'; btn.innerHTML = '🙈 Ocultar'; } 
-      else { div.style.display = 'none'; btn.innerHTML = '👁️ Ver Resposta'; }
-    };
-    window.flipCard = (element) => element.querySelector('.flashcard-inner').classList.toggle('flipped');
+    // UI Helpers
+    window.switchTab = (e, t) => { document.querySelectorAll('.sidebar .tab-btn').forEach(b => b.classList.remove('active')); document.querySelectorAll('.main-content > .tab-content').forEach(c => c.classList.remove('active')); e.currentTarget.classList.add('active'); const el = document.getElementById(t); if(el) el.classList.add('active'); };
+    window.switchSubTab = (e, s, p) => { const parent = document.getElementById(p); parent.querySelectorAll('.subnav-btn').forEach(b => b.classList.remove('active')); parent.querySelectorAll('.subtab-content').forEach(c => c.classList.remove('active')); e.currentTarget.classList.add('active'); const el = document.getElementById(s); if(el) el.classList.add('active'); };
+    window.toggleAccordion = h => { const b = h.nextElementSibling; const l = h.querySelector('span:last-child'); if(b.style.display==="none"){b.style.display="flex";l.textContent="Recolher";}else{b.style.display="none";l.textContent="Expandir";} };
+    window.toggleAnswer = b => { const d = b.closest('.question-box').querySelector('.q-answer'); if(d.style.display==='none'||d.style.display===''){d.style.display='block';b.innerHTML='🙈 Ocultar';}else{d.style.display='none';b.innerHTML='👁️ Ver Resposta';} };
+    window.flipCard = e => e.querySelector('.flashcard-inner').classList.toggle('flipped');
 
-    // Inicializar data
     document.getElementById('liveDate').textContent = new Date().toLocaleDateString('pt-PT', { day: '2-digit', month: 'long', year: 'numeric' });
-    const frases = ["Constância não é intensidade máxima todo dia; é apenas não abandonar o caminho.", "Errar questões na fase de treino é apenas o cérebro a mapear onde deve focar.", "Acolha a sua energia de hoje. Fazer com serenidade é muito melhor."];
-    document.getElementById('dailyQuote').textContent = `"${frases[new Date().getDate() % frases.length]}"`;
+    document.getElementById('rev-date').value = new Date().toISOString().split('T')[0];
   </script>
 </body>
 </html>
